@@ -8,11 +8,10 @@ import (
 
 func (s *Server) ConfigureRouting() {
 
-	bannerReadRepo, bannerUpdateRepo := repo.NewBannerReadSQLRepository(s.DB), repo.NewBannerUpdateSQLRepository(s.DB)
+	bannerReadRepo, bannerUpdateRepo := repo.NewBannerReadSQLRepository(s.Client), repo.NewBannerUpdateSQLRepository(s.Client)
 	bannerReadService, bannerWriteService := banner.NewBannerReadService(bannerReadRepo), banner.NewBannerWriteService(bannerUpdateRepo)
-	bannerHandler := v1.BannerHandler{BannerReadService: bannerReadService, BannerWriteService: bannerWriteService}
+	bannerHandler := v1.NewBannerHandler(bannerReadService, bannerWriteService)
 
 	s.Router.GET("/health", v1.Healthz())
 	s.Router.POST("/banners", bannerHandler.CreateBanner())
-	s.Router.GET("/banners/", bannerHandler.GetUserBanner())
 }

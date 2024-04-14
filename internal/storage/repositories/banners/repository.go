@@ -1,51 +1,77 @@
 package banners
 
 import (
-	e "github.com/daniskazan/avito-tech-banner-service/internal/entities"
-	"gorm.io/gorm"
+	"context"
+	"errors"
+	"github.com/daniskazan/avito-tech-banner-service/internal/dto/banners"
+	"github.com/daniskazan/avito-tech-banner-service/internal/ent"
+	"github.com/daniskazan/avito-tech-banner-service/internal/ent/banner"
+	"github.com/daniskazan/avito-tech-banner-service/internal/ent/feature"
+	"github.com/daniskazan/avito-tech-banner-service/internal/ent/tag"
 )
 
 type (
 	BannerReadRepository interface {
-		GetBannerByTagAndFeatureId(tag e.TagID, feature e.FeatureID) (e.BannerEntity, error)
+		GetBannerByTagAndFeatureId(ctx context.Context, tagId int, featureId int) (ent.Banner, error)
 	}
 
 	BannerUpdateRepository interface {
-		CreateBanner(banner e.BannerEntity) (e.BannerID, error)
-		UpdateBanner(banner e.BannerID) (e.BannerID, error)
-		DeleteBannerByID(bannerId e.BannerID) (e.BannerID, error)
+		CreateBanner(ctx context.Context, dto banners.BannerCreateDTO) (int, error)
+		UpdateBanner(ctx context.Context, bannerId int) (int, error)
+		DeleteBannerByID(ctx context.Context, bannerId int) (int, error)
 	}
 )
 
 type (
 	BannerReadSQLRepository struct {
-		DB *gorm.DB
+		Client *ent.Client
 	}
 	BannerUpdateSQLRepository struct {
-		DB *gorm.DB
+		Client *ent.Client
 	}
 )
 
-func NewBannerReadSQLRepository(db *gorm.DB) *BannerReadSQLRepository {
-	return &BannerReadSQLRepository{DB: db}
+func NewBannerReadSQLRepository(client *ent.Client) *BannerReadSQLRepository {
+	return &BannerReadSQLRepository{Client: client}
 }
 
-func (repo *BannerReadSQLRepository) GetBannerByTagAndFeatureId(tag e.TagID, feature e.FeatureID) (e.BannerEntity, error) {
-	var banner e.BannerEntity
-	repo.DB.Raw("select * from banner_entities b join feature_entities fe on fe.id = b.feature_id join public.banner_tags bt on b.id = bt.banner_entity_id where fe.id = ? and bt.tag_entity_id = ?", feature, tag).Scan(&banner)
-	return banner, nil
+func (repo *BannerReadSQLRepository) GetBannerByTagAndFeatureId(ctx context.Context, tagId int, featureId int) (ent.Banner, error) {
+
+	return ent.Banner{}, nil
 }
 
-func NewBannerUpdateSQLRepository(db *gorm.DB) *BannerUpdateSQLRepository {
-	return &BannerUpdateSQLRepository{DB: db}
+func NewBannerUpdateSQLRepository(client *ent.Client) *BannerUpdateSQLRepository {
+	return &BannerUpdateSQLRepository{Client: client}
 }
 
-func (repo *BannerUpdateSQLRepository) CreateBanner(banner e.BannerEntity) (e.BannerID, error) {
-	return e.BannerID(1), nil
+func (repo *BannerUpdateSQLRepository) CreateBanner(ctx context.Context, dto banners.BannerCreateDTO) (int, error) {
+	query := repo.Client.Banner.Query().
+		Where(
+			banner.HasFeatureWith(
+				feature.ID(dto.FeatureId),
+			),
+		).
+		Where(
+			banner.HasTagsWith(
+				tag.IDIn(dto.TagIds...),
+			),
+		)
+
+	// Проверка наличия совпадений.
+	exists, _ := query.Exist(context.Background())
+	if exists {
+		return 0, errors.New("Баннер уже существует")
+	}
+
+	b, err := repo.Client.Banner.Create().SetContent(dto.Content).SetIsActive(dto.IsActive).AddFeatureIDs(dto.FeatureId).AddTagIDs(dto.TagIds...).Save(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return b.ID, nil
 }
-func (repo *BannerUpdateSQLRepository) UpdateBanner(banner e.BannerID) (e.BannerID, error) {
-	return e.BannerID(1), nil
+func (repo *BannerUpdateSQLRepository) UpdateBanner(ctx context.Context, bannerId int) (int, error) {
+	return bannerId, nil
 }
-func (repo *BannerUpdateSQLRepository) DeleteBannerByID(bannerId e.BannerID) (e.BannerID, error) {
-	return e.BannerID(1), nil
+func (repo *BannerUpdateSQLRepository) DeleteBannerByID(ctx context.Context, bannerId int) (int, error) {
+	return bannerId, nil
 }

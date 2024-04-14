@@ -1,26 +1,27 @@
 package banner
 
 import (
-	e "github.com/daniskazan/avito-tech-banner-service/internal/entities"
+	"context"
+	"github.com/daniskazan/avito-tech-banner-service/internal/dto/banners"
+	"github.com/daniskazan/avito-tech-banner-service/internal/ent"
 	repo "github.com/daniskazan/avito-tech-banner-service/internal/storage/repositories/banners"
-	"math/rand"
 )
 
 type (
 	BReader interface {
-		GetBannerList() ([]e.BannerEntity, error)
+		GetBannerList() ([]ent.Banner, error)
 		GetBannerByTagAndFeature(
-			tag e.TagID,
-			feature e.FeatureID,
+			tagId int,
+			featureId int,
 			useLastRevision bool,
-		) (e.BannerEntity, error)
+		) (ent.Banner, error)
 	}
 	BWriter interface {
 		CreateBanner(
-			featureId e.FeatureID,
-			tagIds []e.TagID,
+			featureId int,
+			tagIds []int,
 			isActive bool,
-		) (e.BannerID, error)
+		) (int, error)
 	}
 )
 
@@ -32,13 +33,13 @@ func NewBannerReadService(repo repo.BannerReadRepository) *BannerReadService {
 	return &BannerReadService{ReadRepo: repo}
 }
 
-func (s *BannerReadService) GetBannerList() ([]e.BannerEntity, error) {
+func (s *BannerReadService) GetBannerList() ([]ent.Banner, error) {
 	return nil, nil
 
 }
 
-func (s *BannerReadService) GetBannerByTagAndFeature(tag e.TagID, feature e.FeatureID, useLastRevision bool) (e.BannerEntity, error) {
-	return s.ReadRepo.GetBannerByTagAndFeatureId(tag, feature)
+func (s *BannerReadService) GetBannerByTagAndFeature(tagId int, featureId int, useLastRevision bool) (ent.Banner, error) {
+	return s.ReadRepo.GetBannerByTagAndFeatureId(context.Background(), tagId, featureId)
 
 }
 
@@ -50,6 +51,11 @@ func NewBannerWriteService(repo repo.BannerUpdateRepository) *BannerWriteService
 	return &BannerWriteService{UpdateRepo: repo}
 }
 
-func (s *BannerWriteService) CreateBanner(featureId e.FeatureID, tagIds []e.TagID, isActive bool) (e.BannerID, error) {
-	return e.BannerID(rand.Int()), nil
+func (s *BannerWriteService) CreateBanner(featureId int, tagIds []int, isActive bool) (int, error) {
+	var dto = banners.BannerCreateDTO{
+		FeatureId: featureId,
+		TagIds:    tagIds,
+		IsActive:  isActive,
+	}
+	return s.UpdateRepo.CreateBanner(context.Background(), dto)
 }

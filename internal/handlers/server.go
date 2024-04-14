@@ -1,16 +1,16 @@
 package handlers
 
 import (
-	"github.com/daniskazan/avito-tech-banner-service/internal/entities"
+	"context"
+	"github.com/daniskazan/avito-tech-banner-service/internal/ent"
 	"github.com/labstack/echo/v4"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	_ "github.com/lib/pq"
+	"log"
 	"net/http"
-	"os"
 )
 
 type Server struct {
-	DB         *gorm.DB
+	Client     *ent.Client
 	Router     *echo.Echo
 	emailAdmin string
 }
@@ -28,15 +28,15 @@ func (s *Server) Start() {
 }
 
 func (s *Server) setupDatabase() {
-	db, err := gorm.Open(postgres.Open("postgresql://banner:banner@localhost:5432/banner"))
+	client, err := ent.Open("postgres", "postgresql://banner:banner@localhost:5432/banner?sslmode=disable")
 	if err != nil {
-		os.Exit(1)
+		log.Fatalf("error creating client db: %v", err)
 	}
-	s.DB = db
-	migrateError := s.DB.AutoMigrate(&entities.FeatureEntity{}, &entities.TagEntity{}, &entities.BannerEntity{})
-	if migrateError != nil {
-		os.Exit(1)
+	if err := client.Schema.Create(context.Background()); err != nil {
+		log.Fatalf("failed creating schema resources: %v", err)
 	}
+
+	s.Client = client
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
