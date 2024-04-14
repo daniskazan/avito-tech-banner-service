@@ -1,0 +1,29 @@
+version: '3.0'
+
+services:
+  pg:
+    image: postgres:16.1-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=banner
+      - POSTGRES_PASSWORD=banner
+      - POSTGRES_DB=banner
+    healthcheck:
+      test: pg_isready -U banner -d banner
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  redis:
+    image: redis/redis-stack
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - "6379:6379"
+      - "8001:8001"
+    healthcheck:
+      test: redis-cli ping
+      interval: 30s
+      timeout: 10s
+      retries: 3

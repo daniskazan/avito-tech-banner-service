@@ -1,16 +1,10 @@
 package main
 
 import (
-	"github.com/gofiber/fiber/v3"
-	"log"
+	"github.com/daniskazan/avito-tech-banner-service/internal/handlers"
 )
 
 func main() {
-	app := fiber.New()
-
-	app.Get("/hello", func(c fiber.Ctx) error {
-		return c.SendString("Hello, World!")
-	})
-
-	log.Fatal(app.Listen(":3000"))
+	srv := handlers.NewServer()
+	srv.Start()
 }
