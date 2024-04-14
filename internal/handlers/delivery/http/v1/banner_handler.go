@@ -4,6 +4,7 @@ import (
 	e "github.com/daniskazan/avito-tech-banner-service/internal/entities"
 	"github.com/daniskazan/avito-tech-banner-service/internal/services/banner"
 	"github.com/labstack/echo/v4"
+	"gorm.io/datatypes"
 	"net/http"
 )
 
@@ -12,6 +13,35 @@ type BannerHandler struct {
 	BannerWriteService banner.BWriter
 }
 
+func (h *BannerHandler) GetUserBanner() echo.HandlerFunc {
+	type (
+		Request struct {
+			FeatureID       e.FeatureID `query:"featureId"`
+			TagID           e.TagID     `query:"tagId"`
+			UseLastRevision bool        `query:"useLastRevision"`
+		}
+		Response struct {
+			BannerContent datatypes.JSON `json:"bannerContent"`
+		}
+	)
+	var request Request
+	return func(c echo.Context) error {
+		err := c.Bind(&request)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Некорректные данные"})
+		}
+
+		b, err := h.BannerReadService.GetBannerByTagAndFeature(request.TagID, request.FeatureID, request.UseLastRevision)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err)
+		}
+
+		return c.JSON(http.StatusOK, Response{
+			BannerContent: b.Content,
+		})
+
+	}
+}
 func (h *BannerHandler) CreateBanner() echo.HandlerFunc {
 	type (
 		Request struct {

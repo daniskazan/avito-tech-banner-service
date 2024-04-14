@@ -31,7 +31,9 @@ func NewBannerReadSQLRepository(db *gorm.DB) *BannerReadSQLRepository {
 }
 
 func (repo *BannerReadSQLRepository) GetBannerByTagAndFeatureId(tag e.TagID, feature e.FeatureID) (e.BannerEntity, error) {
-	return e.BannerEntity{BannerId: e.BannerID(1), Feature: feature, Tags: []e.TagID{tag}}, nil
+	var banner e.BannerEntity
+	repo.DB.Raw("select * from banner_entities b join feature_entities fe on fe.id = b.feature_id join public.banner_tags bt on b.id = bt.banner_entity_id where fe.id = ? and bt.tag_entity_id = ?", feature, tag).Scan(&banner)
+	return banner, nil
 }
 
 func NewBannerUpdateSQLRepository(db *gorm.DB) *BannerUpdateSQLRepository {

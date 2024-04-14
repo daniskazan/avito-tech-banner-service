@@ -14,4 +14,5 @@ func (s *Server) ConfigureRouting() {
 
 	s.Router.GET("/health", v1.Healthz())
 	s.Router.POST("/banners", bannerHandler.CreateBanner())
+	s.Router.GET("/banners/", bannerHandler.GetUserBanner())
 }

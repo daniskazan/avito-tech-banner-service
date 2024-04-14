@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/daniskazan/avito-tech-banner-service/internal/entities"
 	"github.com/labstack/echo/v4"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -32,6 +33,10 @@ func (s *Server) setupDatabase() {
 		os.Exit(1)
 	}
 	s.DB = db
+	migrateError := s.DB.AutoMigrate(&entities.FeatureEntity{}, &entities.TagEntity{}, &entities.BannerEntity{})
+	if migrateError != nil {
+		os.Exit(1)
+	}
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
